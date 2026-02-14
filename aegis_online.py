@@ -11,7 +11,7 @@ st_autorefresh(interval=2000, key="chat_update_pulse")
 
 # --- 🚫 BANNED LISTS ---
 # Partial Match: Blocks word even if hidden inside another (e.g. "dumb" blocks "dumbass")
-BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore"]
+BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore", "dumbass", "dumb"]
 
 # Exact Match: Blocks ONLY if it's the whole word (e.g. blocks "ass" but allows "class")
 BANNED_EXACT = ["ass", "die", "kill", "hate", "butt", "damn"]
@@ -148,3 +148,4 @@ with st.form("input_form", clear_on_submit=True):
         analysis = check_message(user_msg)
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
+
