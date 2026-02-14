@@ -1,13 +1,17 @@
 import streamlit as st
-import google.generativeai as genai
 import httpx
-from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from streamlit_autorefresh import st_autorefresh
 
 # --- 🔐 CONFIGURATION (PASTE YOUR KEYS HERE) ---
-GOOGLE_API_KEY = "AIzaSyBScixlXW09c7ykg7QC7JkgYv8HTgkiiIo"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
+
+# --- 🚫 BANNED WORD LIST (Edit this list!) ---
+# These words will trigger a block, even if hidden inside other words (e.g. "ass" blocks "pass")
+BANNED_WORDS = [
+    "fuck", "shit", "bitch", "ass", "idiot", "stupid", "dumb", 
+    "hate", "kill", "die", "moron", "useless", "dick",
+]
 
 # --- 🔄 AUTO-REFRESH ---
 st_autorefresh(interval=2000, key="chat_update_pulse")
@@ -49,68 +53,35 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- 🧠 AI LOGIC (ROBUST MODE) ---
-genai.configure(api_key=GOOGLE_API_KEY)
-
-# Switched to 'gemini-pro' (1.0) which is often more stable for simple tasks
-model = genai.GenerativeModel('gemini-pro') 
-
-def aegis_rewrite(text, sender):
-    prompt = f"""
-    You are a conflict filter.
-    Input Text: "{text}"
+# --- ⚡ INSTANT FILTER LOGIC (NO AI) ---
+def check_message(text):
+    text_lower = text.lower()
     
-    Task:
-    1. If the text is rude, toxic, or contains profanity: Rewrite it to be polite.
-    2. If the text is neutral: Keep it exactly as is.
-    
-    Response Format:
-    [Rewritten Text] || [Toxicity Score 0-10]
-    """
-    
-    # 🛡️ HARDCODED SAFETY OVERRIDES
-    # We use the explicit Enum values to prevent library confusion
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
-
-    try:
-        response = model.generate_content(prompt, safety_settings=safety_settings)
-        raw_text = response.text
-        
-        if "||" in raw_text:
-            parts = raw_text.split("||")
-            return {"rewritten": parts[0].strip(), "score": int(parts[1].strip()), "error": None}
-        else:
-            return {"rewritten": raw_text.strip(), "score": 0, "error": None}
+    # Check if any banned word is a substring of the message
+    for bad_word in BANNED_WORDS:
+        if bad_word in text_lower:
+            # Found a match! Block it immediately.
+            return {"rewritten": "msg restricted", "score": 100}
             
-    except Exception as e:
-        # 🚨 ERROR HANDLING:
-        # Instead of showing the bad word, we show a system message so you know it failed.
-        error_msg = str(e)
-        if "429" in error_msg:
-            return {"rewritten": "⚠️ [System: AI Quota Exceeded]", "score": 0, "error": error_msg}
-        else:
-            return {"rewritten": f"⚠️ [System: AI Error - {error_msg}]", "score": 0, "error": error_msg}
+    # No bad words found
+    return {"rewritten": text, "score": 0}
 
 # --- 🎨 UI DESIGN ---
-st.set_page_config(page_title="AEGIS: The Tank", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="AEGIS: Hard Filter", page_icon="🛡️", layout="centered")
 
 st.markdown("""
 <style>
     .chat-bubble { padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; width: fit-content; max-width: 80%; }
     .bubble-left { background-color: #F0F2F6; color: black; }
     .bubble-right { background-color: #007AFF; color: white; margin-left: auto; }
+    .restricted-msg { font-style: italic; color: #888; background-color: #f8f9fa; border: 1px dashed #ccc; }
     .god-mode-box { font-size: 0.8em; color: #d32f2f; margin-top: 2px; text-align: right; font-family: monospace; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("🛡️ AEGIS Tank")
+    st.header("🛡️ AEGIS Filter")
     role = st.radio("Identity", ["Person A", "Person B"])
     st.divider()
     
@@ -123,7 +94,7 @@ with st.sidebar:
         st.rerun()
 
 # --- CHAT ---
-st.caption("Robust Conflict Filtering")
+st.caption("Strict Keyword Filtering")
 
 chat_container = st.container()
 with chat_container:
@@ -132,16 +103,28 @@ with chat_container:
         is_me = (m['sender'] == role)
         bubble_class = "bubble-right" if is_me else "bubble-left"
         
+        # Check if restricted
+        msg_text = m['rewritten_text']
+        extra_style = ""
+        
+        if msg_text == "msg restricted":
+            if is_me:
+                # If I sent it, still show as blue bubble but maybe distinctive
+                pass 
+            else:
+                # If they sent it, show as greyed out
+                bubble_class += " restricted-msg"
+        
         # Draw Message
         st.markdown(f"""
             <div class="chat-bubble {bubble_class}">
-                <b>{m['sender']}</b>: {m['rewritten_text']}
+                <b>{m['sender']}</b>: {msg_text}
             </div>
         """, unsafe_allow_html=True)
         
-        # God Mode Text
+        # God Mode Text (Only shows if message was actually blocked)
         if god_mode and m['original_text'] != m['rewritten_text']:
-             st.markdown(f'<div class="god-mode-box">Original: "{m["original_text"]}"</div>', unsafe_allow_html=True)
+             st.markdown(f'<div class="god-mode-box">Blocked: "{m["original_text"]}"</div>', unsafe_allow_html=True)
 
 # --- INPUT ---
 st.divider()
@@ -153,6 +136,7 @@ with st.form("input_form", clear_on_submit=True):
         sent = st.form_submit_button("Send")
         
     if sent and user_msg:
-        analysis = aegis_rewrite(user_msg, role)
+        # Run Local Filter
+        analysis = check_message(user_msg)
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
