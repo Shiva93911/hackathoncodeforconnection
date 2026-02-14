@@ -1,4 +1,4 @@
- import streamlit as st
+import streamlit as st
 import google.generativeai as genai
 import httpx
 from streamlit_autorefresh import st_autorefresh
@@ -144,3 +144,4 @@ with st.form("input_form", clear_on_submit=True):
         analysis = aegis_rewrite(user_msg, role)
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
+
