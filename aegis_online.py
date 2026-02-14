@@ -11,7 +11,7 @@ SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJ
 # --- 🔄 PAGE SETUP & THEME ---
 st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
 
-# --- 🎨 REFINED CSS ---
+# --- 🎨 PRO-TIER CSS STYLING ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
@@ -21,130 +21,120 @@ st.markdown("""
         font-family: 'Inter', sans-serif;
     }
     
-    /* Dark Theme Background */
+    /* Deep Space Background */
     .stApp {
-        background-color: #0E1117;
-        background-image: radial-gradient(circle at 50% 0%, #1c1c2e 0%, #0E1117 70%);
-        color: #E0E0E0;
+        background-color: #09090b;
+        background-image: 
+            radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
+            radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
     }
-    
-    /* Custom Scrollbar */
+
+    /* Custom Scrollbar for Containers */
     ::-webkit-scrollbar {
-        width: 8px;
-        height: 8px;
-    }
-    ::-webkit-scrollbar-track {
-        background: transparent; 
+        width: 6px;
+        background: transparent;
     }
     ::-webkit-scrollbar-thumb {
-        background: #2d2d44; 
-        border-radius: 4px;
-    }
-    ::-webkit-scrollbar-thumb:hover {
-        background: #4a4a6a; 
+        background: #27272a;
+        border-radius: 10px;
     }
 
-    /* Chat Container Styling */
-    .chat-container {
-        display: flex;
-        flex-direction: column;
-        gap: 12px;
-        padding: 10px;
-    }
-
-    /* Message Row (Avatar + Bubble) */
+    /* --- CHAT BUBBLES --- */
     .message-row {
         display: flex;
-        align-items: flex-end;
-        gap: 10px;
-        margin-bottom: 8px;
-        animation: fadeIn 0.3s ease-out forwards;
+        gap: 12px;
+        margin-bottom: 16px;
+        animation: slideIn 0.25s ease-out forwards;
+        opacity: 0;
+        transform: translateY(10px);
     }
     
-    .row-right {
+    @keyframes slideIn {
+        to { opacity: 1; transform: translateY(0); }
+    }
+
+    .row-reverse {
         flex-direction: row-reverse;
     }
 
-    /* Avatar Circle */
+    /* Avatars */
     .avatar {
-        width: 32px;
-        height: 32px;
+        width: 36px;
+        height: 36px;
         border-radius: 50%;
-        background: #3b3b58;
         display: flex;
         align-items: center;
         justify-content: center;
-        font-size: 14px;
         font-weight: 600;
-        color: #fff;
+        font-size: 14px;
+        color: white;
         flex-shrink: 0;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
     }
-    
-    .avatar-right {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-    }
+    .avatar-user { background: linear-gradient(135deg, #6366f1, #8b5cf6); } /* Indigo-Purple */
+    .avatar-peer { background: linear-gradient(135deg, #3f3f46, #52525b); } /* Zinc */
 
-    /* Chat Bubbles */
-    .chat-bubble {
-        padding: 10px 16px;
-        border-radius: 18px;
+    /* Bubble Styling */
+    .bubble {
+        padding: 12px 16px;
+        border-radius: 20px;
         font-size: 15px;
         line-height: 1.5;
-        max-width: 75%;
+        max-width: 600px;
         position: relative;
-        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
-        word-wrap: break-word;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
     
-    .bubble-left {
-        background-color: #262730;
-        color: #e6e6e6;
-        border-bottom-left-radius: 4px;
-        border: 1px solid #363B47;
-    }
-    
-    .bubble-right {
-        background: linear-gradient(135deg, #007AFF 0%, #0062cc 100%);
+    .bubble-user {
+        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
         color: white;
         border-bottom-right-radius: 4px;
     }
     
-    /* Sender Name (Tiny text above bubble) */
-    .sender-name {
-        font-size: 10px;
-        color: #888;
-        margin-bottom: 2px;
-        margin-left: 4px;
+    .bubble-peer {
+        background-color: #27272a;
+        color: #e4e4e7;
+        border: 1px solid #3f3f46;
+        border-bottom-left-radius: 4px;
     }
-    
-    /* Input Area Polish */
+
+    /* Name Label */
+    .name-label {
+        font-size: 11px;
+        color: #a1a1aa;
+        margin-bottom: 4px;
+        margin-left: 2px;
+    }
+
+    /* Input Field Polish */
     .stTextInput > div > div > input {
-        background-color: #1a1c24;
+        background-color: #18181b;
         color: white;
-        border: 1px solid #363B47;
+        border: 1px solid #27272a;
         border-radius: 12px;
-        padding: 12px 15px;
+        padding: 12px 16px;
         font-size: 15px;
+        transition: all 0.2s;
     }
     .stTextInput > div > div > input:focus {
-        border-color: #007AFF;
-        box-shadow: 0 0 0 1px #007AFF;
+        border-color: #6366f1;
+        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
     }
     
     /* Button Polish */
-    .stButton > button {
+    div[data-testid="stFormSubmitButton"] > button {
         border-radius: 12px;
-        height: 46px;
-        font-weight: 600;
+        background-color: #4f46e5;
+        color: white;
+        border: none;
+        height: 48px;
+        transition: transform 0.1s;
+    }
+    div[data-testid="stFormSubmitButton"] > button:hover {
+        background-color: #4338ca;
+        transform: scale(1.02);
     }
 
-    /* Animation Keyframes */
-    @keyframes fadeIn {
-        from { opacity: 0; transform: translateY(10px); }
-        to { opacity: 1; transform: translateY(0); }
-    }
-    
     /* Hide Default Header/Footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -230,14 +220,19 @@ def check_message(text):
 # --- 🎨 SIDEBAR ---
 with st.sidebar:
     st.title("🛡️ AEGIS")
-    st.markdown(f"<div style='background:#1a1c24; padding:10px; border-radius:8px; margin-bottom:20px; border:1px solid #363B47;'><b>Room:</b> <code style='color:#007AFF'>{room_id}</code></div>", unsafe_allow_html=True)
+    st.markdown(f"""
+        <div style='background:#18181b; padding:12px; border-radius:12px; border:1px solid #27272a; margin-bottom:24px;'>
+            <div style='font-size:10px; color:#a1a1aa; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;'>Current Room</div>
+            <code style='font-size:18px; color:#818cf8; font-weight:600;'>{room_id}</code>
+        </div>
+    """, unsafe_allow_html=True)
     
-    st.caption("SETTINGS")
-    username = st.text_input("Username", value="User")
+    st.caption("IDENTITY")
+    username = st.text_input("Display Name", value="User")
     
     st.divider()
     
-    if st.button("🗑️ Clear Room History", type="primary"): 
+    if st.button("🗑️ Clear Room", type="primary"): 
         url = f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room_id}"
         headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
         with httpx.Client() as client:
@@ -248,17 +243,24 @@ with st.sidebar:
 col1, col2, col3 = st.columns([1, 8, 1])
 
 with col2:
-    # Header
-    st.markdown("### 💬 Live Chat")
+    # --- HEADER ---
+    st.markdown("""
+        <div style="display:flex; align-items:center; margin-bottom:20px;">
+            <div style="width:10px; height:10px; background:#4ade80; border-radius:50%; margin-right:10px; box-shadow:0 0 10px #4ade80;"></div>
+            <h3 style="margin:0; padding:0;">Live Chat</h3>
+        </div>
+    """, unsafe_allow_html=True)
     
-    # Message Container (Scrollable)
-    messages_container = st.container(height=550, border=False)
+    # --- MESSAGE CONTAINER ---
+    # Using a fixed height container for the chat history
+    messages_container = st.container(height=550)
     
-    # Input Form (Fixed at bottom conceptually)
+    # --- INPUT AREA ---
+    # Placed below the chat container
     with st.form("chat_input", clear_on_submit=True):
         col_in1, col_in2 = st.columns([8, 1])
         with col_in1:
-            user_msg = st.text_input("Message", placeholder=f"Message as {username}...", label_visibility="collapsed")
+            user_msg = st.text_input("Message", placeholder=f"Type message as {username}...", label_visibility="collapsed")
         with col_in2:
             sent = st.form_submit_button("➤", type="primary")
             
@@ -267,16 +269,17 @@ with col2:
             save_to_db(room_id, username, user_msg, analysis['rewritten'], analysis['score'])
             st.rerun()
 
-    # Render Messages
+    # --- RENDER MESSAGES ---
     with messages_container:
         messages = get_messages(room_id)
         
         if not messages:
             st.markdown(
                 """
-                <div style='text-align:center; color:#555; margin-top:100px;'>
-                    <h3>👋 Welcome to Room <span style='color:#007AFF'>""" + room_id + """</span></h3>
-                    <p>Share the browser URL to invite friends.</p>
+                <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#52525b;'>
+                    <div style='font-size:48px; margin-bottom:10px;'>👋</div>
+                    <div style='font-weight:500;'>No messages yet</div>
+                    <div style='font-size:12px;'>Be the first to say hello!</div>
                 </div>
                 """, 
                 unsafe_allow_html=True
@@ -284,17 +287,23 @@ with col2:
             
         for m in messages:
             is_me = (m['sender'] == username)
-            row_class = "row-right" if is_me else "row-left"
-            bubble_class = "bubble-right" if is_me else "bubble-left"
-            avatar_class = "avatar-right" if is_me else "avatar-left"
+            
+            # Dynamic Classes based on sender
+            row_class = "row-reverse" if is_me else ""
+            bubble_class = "bubble-user" if is_me else "bubble-peer"
+            avatar_class = "avatar-user" if is_me else "avatar-peer"
+            
+            # Get Initials
             initial = m['sender'][0].upper() if m['sender'] else "?"
             
-            # HTML Structure
+            # HTML Construction
             msg_html = f"""
             <div class="message-row {row_class}">
                 <div class="avatar {avatar_class}">{initial}</div>
-                <div style="display:flex; flex-direction:column;">
-                    <div class="chat-bubble {bubble_class}">
+                
+                <div style="display:flex; flex-direction:column; align-items: {'flex-end' if is_me else 'flex-start'};">
+                    <span class="name-label">{m['sender']}</span>
+                    <div class="bubble {bubble_class}">
                         {m['rewritten_text']}
                     </div>
                 </div>
