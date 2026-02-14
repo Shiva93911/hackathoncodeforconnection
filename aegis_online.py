@@ -9,71 +9,143 @@ SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
 # --- 🔄 PAGE SETUP & THEME ---
-st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="wide")
+st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
 
-# Custom CSS for Modern UI
+# --- 🎨 REFINED CSS ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
     
-    /* Global Styles */
+    /* Global Reset & Font */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
     
-    /* Chat Container */
+    /* Dark Theme Background */
     .stApp {
-        background: linear-gradient(135deg, #1e1e2e 0%, #2d2d44 100%);
-        color: white;
+        background-color: #0E1117;
+        background-image: radial-gradient(circle at 50% 0%, #1c1c2e 0%, #0E1117 70%);
+        color: #E0E0E0;
     }
     
+    /* Custom Scrollbar */
+    ::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+        background: transparent; 
+    }
+    ::-webkit-scrollbar-thumb {
+        background: #2d2d44; 
+        border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+        background: #4a4a6a; 
+    }
+
+    /* Chat Container Styling */
+    .chat-container {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+        padding: 10px;
+    }
+
+    /* Message Row (Avatar + Bubble) */
+    .message-row {
+        display: flex;
+        align-items: flex-end;
+        gap: 10px;
+        margin-bottom: 8px;
+        animation: fadeIn 0.3s ease-out forwards;
+    }
+    
+    .row-right {
+        flex-direction: row-reverse;
+    }
+
+    /* Avatar Circle */
+    .avatar {
+        width: 32px;
+        height: 32px;
+        border-radius: 50%;
+        background: #3b3b58;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: 600;
+        color: #fff;
+        flex-shrink: 0;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+    }
+    
+    .avatar-right {
+        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    }
+
     /* Chat Bubbles */
     .chat-bubble {
-        padding: 12px 18px;
+        padding: 10px 16px;
         border-radius: 18px;
-        margin-bottom: 10px;
-        max-width: 70%;
-        width: fit-content;
-        position: relative;
         font-size: 15px;
-        line-height: 1.4;
-        box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+        line-height: 1.5;
+        max-width: 75%;
+        position: relative;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+        word-wrap: break-word;
     }
     
-    /* Receiver Bubble (Left) */
     .bubble-left {
-        background-color: #3b3b58;
-        color: #e0e0e0;
+        background-color: #262730;
+        color: #e6e6e6;
         border-bottom-left-radius: 4px;
-        margin-right: auto;
+        border: 1px solid #363B47;
     }
     
-    /* Sender Bubble (Right) */
     .bubble-right {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        background: linear-gradient(135deg, #007AFF 0%, #0062cc 100%);
         color: white;
         border-bottom-right-radius: 4px;
-        margin-left: auto;
     }
     
-    /* Sender Name Label */
-    .sender-label {
-        font-size: 11px;
-        opacity: 0.7;
-        margin-bottom: 4px;
-        display: block;
+    /* Sender Name (Tiny text above bubble) */
+    .sender-name {
+        font-size: 10px;
+        color: #888;
+        margin-bottom: 2px;
+        margin-left: 4px;
     }
     
-    /* Input Area Styling */
+    /* Input Area Polish */
     .stTextInput > div > div > input {
-        background-color: #2d2d44;
+        background-color: #1a1c24;
         color: white;
-        border: 1px solid #4a4a6a;
-        border-radius: 25px;
-        padding: 10px 15px;
+        border: 1px solid #363B47;
+        border-radius: 12px;
+        padding: 12px 15px;
+        font-size: 15px;
+    }
+    .stTextInput > div > div > input:focus {
+        border-color: #007AFF;
+        box-shadow: 0 0 0 1px #007AFF;
     }
     
-    /* Hide Streamlit Elements */
+    /* Button Polish */
+    .stButton > button {
+        border-radius: 12px;
+        height: 46px;
+        font-weight: 600;
+    }
+
+    /* Animation Keyframes */
+    @keyframes fadeIn {
+        from { opacity: 0; transform: translateY(10px); }
+        to { opacity: 1; transform: translateY(0); }
+    }
+    
+    /* Hide Default Header/Footer */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
     header {visibility: hidden;}
@@ -82,7 +154,6 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # --- 🔄 LOGIC SETUP ---
-# Get Room ID
 query_params = st.query_params
 if "room" in query_params:
     room_id = query_params["room"]
@@ -90,8 +161,8 @@ else:
     room_id = str(uuid.uuid4())[:6]
     st.query_params["room"] = room_id
 
-# Auto-refresh (3s for better performance)
-st_autorefresh(interval=3000, key="chat_update_pulse")
+# Poll every 2.5s
+st_autorefresh(interval=2500, key="chat_update_pulse")
 
 # Banned Lists
 BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore"]
@@ -142,7 +213,7 @@ def check_message(text):
         word_lower = word.lower()
         clean_word = word
         if word_lower in BANNED_EXACT:
-            clean_word = "🤬" # Emoji replacement
+            clean_word = "🤬" 
             found_bad = True
         else:
             for bad in BANNED_PARTIAL:
@@ -159,20 +230,14 @@ def check_message(text):
 # --- 🎨 SIDEBAR ---
 with st.sidebar:
     st.title("🛡️ AEGIS")
-    st.caption("Secure Chat Protocol")
-    st.divider()
+    st.markdown(f"<div style='background:#1a1c24; padding:10px; border-radius:8px; margin-bottom:20px; border:1px solid #363B47;'><b>Room:</b> <code style='color:#007AFF'>{room_id}</code></div>", unsafe_allow_html=True)
     
-    # Connection Info
-    st.markdown(f"**Room ID:** `{room_id}`")
-    st.info("Share the URL to invite others!")
-    
-    st.divider()
-    
-    # User Settings
+    st.caption("SETTINGS")
     username = st.text_input("Username", value="User")
     
-    if st.button("🗑️ Clear History", type="primary"): 
-        # Only clears messages for THIS room
+    st.divider()
+    
+    if st.button("🗑️ Clear Room History", type="primary"): 
         url = f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room_id}"
         headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
         with httpx.Client() as client:
@@ -180,48 +245,59 @@ with st.sidebar:
         st.rerun()
 
 # --- 💬 MAIN CHAT AREA ---
-# Create a centered container for the chat
-col1, col2, col3 = st.columns([1, 6, 1])
+col1, col2, col3 = st.columns([1, 8, 1])
 
 with col2:
+    # Header
     st.markdown("### 💬 Live Chat")
     
-    # Container for messages
-    messages_container = st.container(height=500, border=False)
+    # Message Container (Scrollable)
+    messages_container = st.container(height=550, border=False)
     
-    # Input area at the bottom
+    # Input Form (Fixed at bottom conceptually)
     with st.form("chat_input", clear_on_submit=True):
-        col_in1, col_in2 = st.columns([6, 1])
+        col_in1, col_in2 = st.columns([8, 1])
         with col_in1:
-            user_msg = st.text_input("Message", placeholder="Type a message...", label_visibility="collapsed")
+            user_msg = st.text_input("Message", placeholder=f"Message as {username}...", label_visibility="collapsed")
         with col_in2:
-            sent = st.form_submit_button("➤")
+            sent = st.form_submit_button("➤", type="primary")
             
         if sent and user_msg:
             analysis = check_message(user_msg)
             save_to_db(room_id, username, user_msg, analysis['rewritten'], analysis['score'])
             st.rerun()
 
-    # Render Messages inside the scrollable container
+    # Render Messages
     with messages_container:
         messages = get_messages(room_id)
         
         if not messages:
-            st.markdown("<div style='text-align:center; color:#888; margin-top:50px;'>No messages yet.<br>Share the link to start chatting!</div>", unsafe_allow_html=True)
+            st.markdown(
+                """
+                <div style='text-align:center; color:#555; margin-top:100px;'>
+                    <h3>👋 Welcome to Room <span style='color:#007AFF'>""" + room_id + """</span></h3>
+                    <p>Share the browser URL to invite friends.</p>
+                </div>
+                """, 
+                unsafe_allow_html=True
+            )
             
         for m in messages:
             is_me = (m['sender'] == username)
+            row_class = "row-right" if is_me else "row-left"
             bubble_class = "bubble-right" if is_me else "bubble-left"
-            align = "right" if is_me else "left"
+            avatar_class = "avatar-right" if is_me else "avatar-left"
+            initial = m['sender'][0].upper() if m['sender'] else "?"
             
-            # HTML for the message block
+            # HTML Structure
             msg_html = f"""
-            <div style="display: flex; flex-direction: column; align-items: { 'flex-end' if is_me else 'flex-start' };">
-                <div class="chat-bubble {bubble_class}">
-                    <span class="sender-label">{m['sender']}</span>
-                    {m['rewritten_text']}
+            <div class="message-row {row_class}">
+                <div class="avatar {avatar_class}">{initial}</div>
+                <div style="display:flex; flex-direction:column;">
+                    <div class="chat-bubble {bubble_class}">
+                        {m['rewritten_text']}
+                    </div>
                 </div>
             </div>
             """
-            
             st.markdown(msg_html, unsafe_allow_html=True)
