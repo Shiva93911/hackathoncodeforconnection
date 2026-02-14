@@ -8,91 +8,105 @@ SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
 # --- 🎨 PAGE SETUP ---
-st.set_page_config(page_title="AEGIS", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="centered")
 
-# --- 💅 CUSTOM CSS ---
-st.markdown("""
+# --- 🌓 THEME TOGGLE LOGIC ---
+if "dark_mode" not in st.session_state:
+    st.session_state.dark_mode = False
+
+with st.sidebar:
+    st.title("🛡️ AEGIS")
+    st.session_state.dark_mode = st.toggle("🌙 Dark Mode", value=st.session_state.dark_mode)
+    st.divider()
+
+# --- 💅 DYNAMIC CSS ---
+if st.session_state.dark_mode:
+    # --- DARK THEME ---
+    bg_gradient = "linear-gradient(135deg, #0f172a 0%, #1e1e2e 100%)"
+    bubble_me = "#2563eb"  # Blue
+    bubble_peer = "#334155" # Dark Grey
+    text_me = "#ffffff"
+    text_peer = "#cbd5e1"
+    border_peer = "1px solid #475569"
+else:
+    # --- LIGHT THEME ---
+    bg_gradient = "linear-gradient(180deg, #e0f2fe 0%, #bae6fd 100%)"
+    bubble_me = "#0284c7"  # Sky Blue
+    bubble_peer = "#ffffff" # White
+    text_me = "#ffffff"
+    text_peer = "#1e293b"
+    border_peer = "1px solid #e2e8f0"
+
+st.markdown(f"""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    html, body, [class*="css"] {{ font-family: 'Inter', sans-serif; }}
 
-    /* Background */
-    .stApp { background: linear-gradient(135deg, #0f172a 0%, #1e1e2e 100%); }
+    .stApp {{ background: {bg_gradient}; }}
+    header, #MainMenu, footer {{ visibility: hidden; }}
 
-    /* Hide Headers */
-    header, #MainMenu, footer { visibility: hidden; }
+    /* ALIGNMENT LOGIC */
+    [data-testid="stChatMessage"] {{
+        display: flex;
+        width: 100% !important;
+        background-color: transparent !important;
+        margin-bottom: 12px;
+    }}
 
-    /* Input Area Styling */
-    .stChatInput { padding-bottom: 20px; }
+    /* YOUR MESSAGES (RIGHT) */
+    [data-testid="stChatMessage"][data-testid="chat-message-user"] {{
+        flex-direction: row-reverse;
+        text-align: right;
+    }}
+    [data-testid="stChatMessage"][data-testid="chat-message-user"] .stChatMessageContent {{
+        background-color: {bubble_me} !important;
+        color: {text_me} !important;
+        border-radius: 18px 18px 4px 18px !important;
+        margin-left: 20%;
+        padding: 12px 16px;
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }}
 
-    /* Message Styling */
-    [data-testid="stChatMessage"] {
-        padding: 1rem;
-        border-radius: 12px;
-        margin-bottom: 10px;
-        color: #FFFFFF; /* FORCE WHITE TEXT */
-    }
+    /* PEER MESSAGES (LEFT) */
+    [data-testid="stChatMessage"][data-testid="chat-message-assistant"] {{
+        flex-direction: row;
+        text-align: left;
+    }}
+    [data-testid="stChatMessage"][data-testid="chat-message-assistant"] .stChatMessageContent {{
+        background-color: {bubble_peer} !important;
+        color: {text_peer} !important;
+        border-radius: 18px 18px 18px 4px !important;
+        margin-right: 20%;
+        padding: 12px 16px;
+        border: {border_peer};
+        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    }}
 
-    /* User Message (Blue) */
-    [data-testid="stChatMessage"][data-testid="user"] {
-        background-color: #2563eb; /* Blue */
-        border: none;
-    }
-
-    /* Peer Message (Dark Grey) */
-    [data-testid="stChatMessage"][data-testid="assistant"] {
-        background-color: #334155; /* Slate Grey */
-        border: 1px solid #475569;
-    }
-    
-    /* Reply Block inside message */
-    blockquote {
-        border-left: 3px solid #cbd5e1;
-        padding-left: 10px;
-        color: #cbd5e1;
-        font-size: 0.9em;
+    blockquote {{
+        border-left: 3px solid #94a3b8;
+        background: rgba(0,0,0,0.05);
+        padding: 8px;
         margin-bottom: 8px;
-        background: rgba(255,255,255,0.1);
-        padding: 5px;
         border-radius: 4px;
-    }
-    
-    /* Reply Button Styling (Small) */
-    div[data-testid="stButton"] > button {
-        padding: 0px 8px;
-        font-size: 12px;
-        height: 24px;
-        min-height: 24px;
-        border: 1px solid #475569;
-        background: transparent;
-        color: #94a3b8;
-    }
-    div[data-testid="stButton"] > button:hover {
-        border-color: #2563eb;
-        color: #2563eb;
-    }
-
+        font-style: italic;
+        font-size: 0.85em;
+        text-align: left;
+    }}
 </style>
 """, unsafe_allow_html=True)
 
-# --- 🔄 SESSION STATE INIT ---
+# --- 🔗 ROOM & REFRESH LOGIC ---
 if "reply_to" not in st.session_state:
     st.session_state.reply_to = None
 
-# --- 🔄 LOGIC ---
 query_params = st.query_params
-if "room" in query_params:
-    room_id = query_params["room"]
-else:
-    room_id = str(uuid.uuid4())[:6]
-    st.query_params["room"] = room_id
+room_id = query_params.get("room", str(uuid.uuid4())[:6])
+st.query_params["room"] = room_id
+invite_link = f"https://aegis-chat.streamlit.app/?room={room_id}" 
 
 st_autorefresh(interval=2500, key="chat_refresh")
 
-BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore"]
-BANNED_EXACT = ["ass", "die", "kill", "hate", "butt", "damn"]
-
-# --- 🛠️ HELPER FUNCTIONS ---
+# --- 🛠️ HELPERS ---
 def get_messages(room):
     url = f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room}&select=*&order=created_at.asc"
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
@@ -100,102 +114,72 @@ def get_messages(room):
         with httpx.Client() as client:
             r = client.get(url, headers=headers, timeout=5.0)
             return r.json() if r.status_code == 200 else []
-    except:
-        return []
+    except: return []
 
 def save_to_db(room, sender, original, rewritten, score):
     url = f"{SUPABASE_URL}/rest/v1/messages"
-    headers = {
-        "apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}",
-        "Content-Type": "application/json", "Prefer": "return=minimal"
-    }
-    data = {
-        "room_id": room, "sender": sender,
-        "original_text": original, "rewritten_text": rewritten,
-        "toxicity_score": int(score)
-    }
+    headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}", "Content-Type": "application/json"}
+    data = {"room_id": room, "sender": sender, "original_text": original, "rewritten_text": rewritten, "toxicity_score": int(score)}
     try:
-        with httpx.Client() as client:
-            client.post(url, headers=headers, json=data, timeout=5.0)
-    except:
-        pass
+        with httpx.Client() as client: client.post(url, headers=headers, json=data)
+    except: pass
 
 def check_message(text):
+    BANNED = ["fuck", "shit", "bitch", "idiot", "stupid", "ass", "die", "kill"]
+    found = False
     words = text.split()
-    clean_words = []
-    found_bad = False
-    for word in words:
-        if word.lower() in BANNED_EXACT:
-            clean_words.append("🤬")
-            found_bad = True
-        else:
-            is_p = False
-            for bad in BANNED_PARTIAL:
-                if bad in word.lower():
-                    clean_words.append("🤬")
-                    found_bad = True
-                    is_p = True
-                    break
-            if not is_p: clean_words.append(word)
-    return {"rewritten": " ".join(clean_words), "score": 100 if found_bad else 0}
+    clean = []
+    for w in words:
+        if any(b in w.lower() for b in BANNED):
+            clean.append("🤬"); found = True
+        else: clean.append(w)
+    return {"rewritten": " ".join(clean), "score": 100 if found else 0}
 
-# --- 📱 SIDEBAR ---
+# --- 📱 SIDEBAR CONTENT ---
 with st.sidebar:
-    st.title("🛡️ AEGIS")
-    st.caption(f"Room: {room_id}")
-    username = st.text_input("Username", value="User")
+    st.subheader("🔗 Invite Friends")
+    st.text_input("Room Link", value=invite_link)
+    username = st.text_input("Display Name", value="User")
+    
     st.divider()
-    if st.button("🗑️ Clear Chat"):
-        url = f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room_id}"
+    with st.expander("🛠️ Get Source Code"):
+        with open(__file__, "r") as f:
+            st.code(f.read(), language="python")
+
+    if st.button("🗑️ Clear History", use_container_width=True):
         headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
-        with httpx.Client() as client:
-            client.delete(url, headers=headers)
+        httpx.delete(f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room_id}", headers=headers)
         st.rerun()
 
 # --- 💬 CHAT AREA ---
+st.subheader(f"Room: {room_id}")
+
+
+
 messages = get_messages(room_id)
-
-if not messages:
-    st.info("No messages yet.")
-
 for i, m in enumerate(messages):
     is_me = (m['sender'] == username)
-    role = "user" if is_me else "assistant" # Uses Streamlit's native roles for styling
+    role = "user" if is_me else "assistant"
     avatar = "⚡" if is_me else "👤"
 
     with st.chat_message(role, avatar=avatar):
-        # Header (Name + Reply Button)
-        c1, c2 = st.columns([8, 1])
-        with c1:
-            if not is_me: st.markdown(f"**{m['sender']}**")
-        with c2:
-            # Unique key for every button
-            if st.button("↩️", key=f"reply_{i}"):
-                st.session_state.reply_to = f"> *Replying to {m['sender']}:* \"{m['rewritten_text']}\"\n\n"
-                st.rerun()
-        
+        if not is_me: st.markdown(f"**{m['sender']}**")
         st.markdown(m['rewritten_text'])
+        if st.button("↩️", key=f"btn_{i}"):
+            st.session_state.reply_to = {"sender": m['sender'], "text": m['rewritten_text']}
+            st.rerun()
 
 # --- ⌨️ INPUT AREA ---
-# Show "Replying To" Banner
 if st.session_state.reply_to:
-    st.markdown(f"""
-        <div style="background:#334155; padding:10px; border-radius:8px; margin-bottom:10px; border-left:4px solid #4ade80; display:flex; justify-content:space-between; align-items:center;">
-            <span style="color:#e2e8f0; font-size:14px;">↩️ Replying...</span>
-        </div>
-    """, unsafe_allow_html=True)
-    if st.button("❌ Cancel Reply", key="cancel_reply"):
-        st.session_state.reply_to = None
-        st.rerun()
+    st.info(f"↩️ Replying to {st.session_state.reply_to['sender']}")
+    if st.button("❌ Cancel"):
+        st.session_state.reply_to = None; st.rerun()
 
 if prompt := st.chat_input(f"Message as {username}..."):
-    final_msg = prompt
-    
-    # Prepend reply text if exists
+    final_text = prompt
     if st.session_state.reply_to:
-        final_msg = st.session_state.reply_to + prompt
-        st.session_state.reply_to = None # Clear after sending
-        
-    analysis = check_message(final_msg)
-    save_to_db(room_id, username, final_msg, analysis['rewritten'], analysis['score'])
+        final_text = f"> {st.session_state.reply_to['text']}\n\n{prompt}"
+        st.session_state.reply_to = None
+    res = check_message(final_text)
+    save_to_db(room_id, username, final_text, res['rewritten'], res['score'])
     st.rerun()
