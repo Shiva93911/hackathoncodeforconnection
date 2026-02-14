@@ -8,138 +8,33 @@ from streamlit_autorefresh import st_autorefresh
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
-# --- 🔄 PAGE SETUP & THEME ---
-st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="wide", initial_sidebar_state="expanded")
+# --- 🎨 PAGE SETUP ---
+st.set_page_config(page_title="AEGIS Chat", page_icon="🛡️", layout="centered")
 
-# --- 🎨 PRO-TIER CSS STYLING ---
+# --- CUSTOM CSS (Just for polish, not layout) ---
 st.markdown("""
 <style>
-    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap');
+    /* Import Font */
+    @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
     
-    /* Global Reset & Font */
     html, body, [class*="css"] {
         font-family: 'Inter', sans-serif;
     }
-    
-    /* Deep Space Background */
-    .stApp {
-        background-color: #09090b;
-        background-image: 
-            radial-gradient(at 0% 0%, rgba(56, 189, 248, 0.1) 0px, transparent 50%), 
-            radial-gradient(at 100% 100%, rgba(139, 92, 246, 0.1) 0px, transparent 50%);
-    }
 
-    /* Custom Scrollbar for Containers */
-    ::-webkit-scrollbar {
-        width: 6px;
-        background: transparent;
-    }
-    ::-webkit-scrollbar-thumb {
-        background: #27272a;
-        border-radius: 10px;
-    }
-
-    /* --- CHAT BUBBLES --- */
-    .message-row {
-        display: flex;
-        gap: 12px;
-        margin-bottom: 16px;
-        animation: slideIn 0.25s ease-out forwards;
-        opacity: 0;
-        transform: translateY(10px);
-    }
-    
-    @keyframes slideIn {
-        to { opacity: 1; transform: translateY(0); }
-    }
-
-    .row-reverse {
-        flex-direction: row-reverse;
-    }
-
-    /* Avatars */
-    .avatar {
-        width: 36px;
-        height: 36px;
-        border-radius: 50%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-weight: 600;
-        font-size: 14px;
-        color: white;
-        flex-shrink: 0;
-        box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    }
-    .avatar-user { background: linear-gradient(135deg, #6366f1, #8b5cf6); } /* Indigo-Purple */
-    .avatar-peer { background: linear-gradient(135deg, #3f3f46, #52525b); } /* Zinc */
-
-    /* Bubble Styling */
-    .bubble {
-        padding: 12px 16px;
-        border-radius: 20px;
-        font-size: 15px;
-        line-height: 1.5;
-        max-width: 600px;
-        position: relative;
-        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-    
-    .bubble-user {
-        background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
-        color: white;
-        border-bottom-right-radius: 4px;
-    }
-    
-    .bubble-peer {
-        background-color: #27272a;
-        color: #e4e4e7;
-        border: 1px solid #3f3f46;
-        border-bottom-left-radius: 4px;
-    }
-
-    /* Name Label */
-    .name-label {
-        font-size: 11px;
-        color: #a1a1aa;
-        margin-bottom: 4px;
-        margin-left: 2px;
-    }
-
-    /* Input Field Polish */
-    .stTextInput > div > div > input {
-        background-color: #18181b;
-        color: white;
-        border: 1px solid #27272a;
-        border-radius: 12px;
-        padding: 12px 16px;
-        font-size: 15px;
-        transition: all 0.2s;
-    }
-    .stTextInput > div > div > input:focus {
-        border-color: #6366f1;
-        box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.2);
-    }
-    
-    /* Button Polish */
-    div[data-testid="stFormSubmitButton"] > button {
-        border-radius: 12px;
-        background-color: #4f46e5;
-        color: white;
-        border: none;
-        height: 48px;
-        transition: transform 0.1s;
-    }
-    div[data-testid="stFormSubmitButton"] > button:hover {
-        background-color: #4338ca;
-        transform: scale(1.02);
-    }
-
-    /* Hide Default Header/Footer */
+    /* Hide standard headers */
+    header {visibility: hidden;}
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
-    header {visibility: hidden;}
     
+    /* Subtle background gradient */
+    .stApp {
+        background: linear-gradient(180deg, #0e1117 0%, #161b22 100%);
+    }
+    
+    /* Customize the chat input container */
+    .stChatInput {
+        padding-bottom: 20px;
+    }
 </style>
 """, unsafe_allow_html=True)
 
@@ -151,8 +46,8 @@ else:
     room_id = str(uuid.uuid4())[:6]
     st.query_params["room"] = room_id
 
-# Poll every 2.5s
-st_autorefresh(interval=2500, key="chat_update_pulse")
+# Poll for new messages every 3 seconds
+st_autorefresh(interval=3000, key="chat_update_pulse")
 
 # Banned Lists
 BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore"]
@@ -217,96 +112,57 @@ def check_message(text):
     score = 100 if found_bad else 0
     return {"rewritten": final_text, "score": score}
 
-# --- 🎨 SIDEBAR ---
+# --- 📱 SIDEBAR ---
 with st.sidebar:
     st.title("🛡️ AEGIS")
-    st.markdown(f"""
-        <div style='background:#18181b; padding:12px; border-radius:12px; border:1px solid #27272a; margin-bottom:24px;'>
-            <div style='font-size:10px; color:#a1a1aa; text-transform:uppercase; letter-spacing:1px; margin-bottom:4px;'>Current Room</div>
-            <code style='font-size:18px; color:#818cf8; font-weight:600;'>{room_id}</code>
-        </div>
-    """, unsafe_allow_html=True)
-    
-    st.caption("IDENTITY")
-    username = st.text_input("Display Name", value="User")
-    
+    st.info(f"Room: {room_id}")
     st.divider()
     
-    if st.button("🗑️ Clear Room", type="primary"): 
+    username = st.text_input("Your Name", value="User")
+    
+    st.divider()
+    if st.button("Clear Room History", type="primary"): 
         url = f"{SUPABASE_URL}/rest/v1/messages?room_id=eq.{room_id}"
         headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
         with httpx.Client() as client:
             client.delete(url, headers=headers)
         st.rerun()
 
-# --- 💬 MAIN CHAT AREA ---
-col1, col2, col3 = st.columns([1, 8, 1])
+# --- 💬 MAIN CHAT INTERFACE ---
+st.markdown("### 💬 Live Chat")
 
-with col2:
-    # --- HEADER ---
-    st.markdown("""
-        <div style="display:flex; align-items:center; margin-bottom:20px;">
-            <div style="width:10px; height:10px; background:#4ade80; border-radius:50%; margin-right:10px; box-shadow:0 0 10px #4ade80;"></div>
-            <h3 style="margin:0; padding:0;">Live Chat</h3>
+# 1. Load History
+messages = get_messages(room_id)
+
+# 2. Display History (Using Native Streamlit Chat)
+if not messages:
+    st.markdown(
+        """
+        <div style='text-align:center; color:#555; margin-top:50px; margin-bottom:50px;'>
+            <p>No messages yet. Be the first to say hi!</p>
         </div>
-    """, unsafe_allow_html=True)
-    
-    # --- MESSAGE CONTAINER ---
-    # Using a fixed height container for the chat history
-    messages_container = st.container(height=550)
-    
-    # --- INPUT AREA ---
-    # Placed below the chat container
-    with st.form("chat_input", clear_on_submit=True):
-        col_in1, col_in2 = st.columns([8, 1])
-        with col_in1:
-            user_msg = st.text_input("Message", placeholder=f"Type message as {username}...", label_visibility="collapsed")
-        with col_in2:
-            sent = st.form_submit_button("➤", type="primary")
-            
-        if sent and user_msg:
-            analysis = check_message(user_msg)
-            save_to_db(room_id, username, user_msg, analysis['rewritten'], analysis['score'])
-            st.rerun()
+        """, unsafe_allow_html=True
+    )
 
-    # --- RENDER MESSAGES ---
-    with messages_container:
-        messages = get_messages(room_id)
-        
-        if not messages:
-            st.markdown(
-                """
-                <div style='display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:#52525b;'>
-                    <div style='font-size:48px; margin-bottom:10px;'>👋</div>
-                    <div style='font-weight:500;'>No messages yet</div>
-                    <div style='font-size:12px;'>Be the first to say hello!</div>
-                </div>
-                """, 
-                unsafe_allow_html=True
-            )
-            
-        for m in messages:
-            is_me = (m['sender'] == username)
-            
-            # Dynamic Classes based on sender
-            row_class = "row-reverse" if is_me else ""
-            bubble_class = "bubble-user" if is_me else "bubble-peer"
-            avatar_class = "avatar-user" if is_me else "avatar-peer"
-            
-            # Get Initials
-            initial = m['sender'][0].upper() if m['sender'] else "?"
-            
-            # HTML Construction
-            msg_html = f"""
-            <div class="message-row {row_class}">
-                <div class="avatar {avatar_class}">{initial}</div>
-                
-                <div style="display:flex; flex-direction:column; align-items: {'flex-end' if is_me else 'flex-start'};">
-                    <span class="name-label">{m['sender']}</span>
-                    <div class="bubble {bubble_class}">
-                        {m['rewritten_text']}
-                    </div>
-                </div>
-            </div>
-            """
-            st.markdown(msg_html, unsafe_allow_html=True)
+for m in messages:
+    is_me = (m['sender'] == username)
+    
+    # Choose avatar based on sender
+    avatar_icon = "👤"
+    if is_me:
+        avatar_icon = "⚡"
+    
+    # Render using native components
+    with st.chat_message(m['sender'], avatar=avatar_icon):
+        st.write(m['rewritten_text'])
+
+# 3. Chat Input (Fixed at bottom)
+if prompt := st.chat_input(f"Message as {username}..."):
+    # Filter
+    analysis = check_message(prompt)
+    
+    # Save
+    save_to_db(room_id, username, prompt, analysis['rewritten'], analysis['score'])
+    
+    # Rerun to show new message immediately
+    st.rerun()
