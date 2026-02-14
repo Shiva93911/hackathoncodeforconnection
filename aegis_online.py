@@ -45,27 +45,32 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- 🧠 AI LOGIC (SWITCHED TO 1.5 FLASH) ---
+# --- 🧠 SMART AI LOGIC (SELF-HEALING) ---
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# ✅ CHANGED: Switched to 'gemini-1.5-flash' which has a much bigger free quota
-model = genai.GenerativeModel('gemini-1.5-flash') 
-
 def aegis_rewrite(text, sender):
+    # 🛡️ LIST OF MODELS TO TRY (If one fails, it tries the next)
+    # 1. Flash (Fastest, Free)
+    # 2. Flash-Latest (Alternative name)
+    # 3. Pro (The "Tank" - very reliable backup)
+    model_priority_list = [
+        'gemini-1.5-flash', 
+        'gemini-1.5-flash-latest', 
+        'gemini-1.5-flash-001',
+        'gemini-pro'
+    ]
+    
     prompt = f"""
     Act as a conflict shield.
     Input: "{text}"
-    
     Instructions:
     1. If the input contains profanity (f*ck, sh*t, etc), you MUST rewrite it to be polite.
     2. If the input is rude, make it polite.
     3. If the input is neutral/hello, keep it exactly as is.
-    
     Format your response exactly like this:
     [Rewritten Message] || [Toxicity Score 0-100]
     """
     
-    # Safety settings to allow processing of bad words for correction
     safety_settings = [
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -73,24 +78,34 @@ def aegis_rewrite(text, sender):
         {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
     ]
 
-    try:
-        response = model.generate_content(prompt, safety_settings=safety_settings)
-        
-        # Simple parsing logic
-        raw_text = response.text
-        if "||" in raw_text:
-            parts = raw_text.split("||")
-            rewritten = parts[0].strip()
-            score = int(parts[1].strip())
-        else:
-            rewritten = raw_text.strip()
-            score = 0
+    last_error = None
+
+    # 🔄 Loop through models until one works
+    for model_name in model_priority_list:
+        try:
+            model = genai.GenerativeModel(model_name)
+            response = model.generate_content(prompt, safety_settings=safety_settings)
             
-        return {"rewritten": rewritten, "score": score, "error": None}
-        
-    except Exception as e:
-        # Return error string so we can debug in sidebar
-        return {"rewritten": text, "score": 0, "error": str(e)}
+            # If successful, parse and return immediately
+            raw_text = response.text
+            if "||" in raw_text:
+                parts = raw_text.split("||")
+                rewritten = parts[0].strip()
+                score = int(parts[1].strip())
+            else:
+                rewritten = raw_text.strip()
+                score = 0
+            
+            # Success! Return the data (and the name of the model that worked for debugging)
+            return {"rewritten": rewritten, "score": score, "error": None}
+            
+        except Exception as e:
+            # If this model failed, save error and loop to the next one
+            last_error = e
+            continue
+
+    # If ALL models failed, return the error
+    return {"rewritten": text, "score": 0, "error": str(last_error)}
 
 # --- 🎨 UI DESIGN ---
 st.set_page_config(page_title="AEGIS: Silent Shield", page_icon="🛡️", layout="centered")
@@ -124,9 +139,9 @@ with st.sidebar:
         clear_db()
         st.rerun()
         
-    # DEBUG SECTION (Shows red error if AI fails)
+    # DEBUG SECTION
     if "last_error" in st.session_state and st.session_state.last_error:
-        st.error(f"AI Error: {st.session_state.last_error}")
+        st.error(f"Connection Issue: {st.session_state.last_error}")
 
 # --- MAIN CHAT HEADER ---
 st.title("🛡️ AEGIS")
@@ -183,12 +198,3 @@ with st.form("input_form", clear_on_submit=True):
     if sent and user_msg:
         # Run Analysis
         analysis = aegis_rewrite(user_msg, role)
-        
-        # Capture error
-        if analysis['error']:
-            st.session_state.last_error = analysis['error']
-        else:
-            st.session_state.last_error = None
-            
-        save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
-        st.rerun()
