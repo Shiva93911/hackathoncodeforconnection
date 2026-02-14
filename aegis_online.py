@@ -8,68 +8,87 @@ SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
 # --- 🎨 PAGE SETUP ---
-st.set_page_config(page_title="AEGIS", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="AEGIS Light", page_icon="🛡️", layout="centered")
 
-# --- 💅 CUSTOM CSS ---
+# --- 💅 CUSTOM CSS (Light Mode) ---
 st.markdown("""
 <style>
     @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;600&display=swap');
-    html, body, [class*="css"] { font-family: 'Inter', sans-serif; }
+    html, body, [class*="css"] { font-family: 'Inter', sans-serif; color: #1e293b; }
 
-    /* Background */
-    .stApp { background: linear-gradient(135deg, #0f172a 0%, #1e1e2e 100%); }
+    /* ☀️ LIGHT BLUE BACKGROUND */
+    .stApp {
+        background: linear-gradient(180deg, #e0f2fe 0%, #bae6fd 100%); /* Sky Blue Gradient */
+    }
 
     /* Hide Headers */
     header, #MainMenu, footer { visibility: hidden; }
 
     /* Input Area Styling */
     .stChatInput { padding-bottom: 20px; }
+    
+    /* Input Box Background */
+    .stTextInput > div > div > input {
+        background-color: #ffffff;
+        color: #0f172a;
+        border: 1px solid #cbd5e1;
+    }
 
     /* Message Styling */
     [data-testid="stChatMessage"] {
         padding: 1rem;
         border-radius: 12px;
         margin-bottom: 10px;
-        color: #FFFFFF; /* FORCE WHITE TEXT */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.05);
     }
 
-    /* User Message (Blue) */
+    /* 🔵 User Message (Blue Bubble, White Text) */
     [data-testid="stChatMessage"][data-testid="user"] {
-        background-color: #2563eb; /* Blue */
+        background-color: #0284c7; /* Sky Blue 600 */
+        color: #ffffff;
         border: none;
     }
-
-    /* Peer Message (Dark Grey) */
+    
+    /* ⚪ Peer Message (White Bubble, Dark Text) */
     [data-testid="stChatMessage"][data-testid="assistant"] {
-        background-color: #334155; /* Slate Grey */
-        border: 1px solid #475569;
+        background-color: #ffffff;
+        color: #334155; /* Slate 700 */
+        border: 1px solid #e2e8f0;
     }
     
+    /* Avatar Icons */
+    [data-testid="stChatMessageAvatar"] {
+        background-color: #ffffff;
+        border: 1px solid #e2e8f0;
+    }
+
     /* Reply Block inside message */
     blockquote {
         border-left: 3px solid #cbd5e1;
         padding-left: 10px;
-        color: #cbd5e1;
+        color: inherit;
+        opacity: 0.8;
         font-size: 0.9em;
         margin-bottom: 8px;
-        background: rgba(255,255,255,0.1);
+        background: rgba(0,0,0,0.05);
         padding: 5px;
         border-radius: 4px;
     }
     
-    /* Reply Button Styling (Small) */
+    /* Small Reply Button */
     div[data-testid="stButton"] > button {
         padding: 0px 8px;
         font-size: 12px;
         height: 24px;
         min-height: 24px;
-        border: 1px solid #475569;
-        background: transparent;
-        color: #94a3b8;
+        border: 1px solid #94a3b8;
+        background: rgba(255,255,255,0.5);
+        color: #475569;
     }
     div[data-testid="stButton"] > button:hover {
-        border-color: #2563eb;
-        color: #2563eb;
+        border-color: #0284c7;
+        color: #0284c7;
+        background: #ffffff;
     }
 
 </style>
@@ -142,7 +161,7 @@ def check_message(text):
 # --- 📱 SIDEBAR ---
 with st.sidebar:
     st.title("🛡️ AEGIS")
-    st.caption(f"Room: {room_id}")
+    st.markdown(f"**Room:** `{room_id}`")
     username = st.text_input("Username", value="User")
     st.divider()
     if st.button("🗑️ Clear Chat"):
@@ -160,7 +179,7 @@ if not messages:
 
 for i, m in enumerate(messages):
     is_me = (m['sender'] == username)
-    role = "user" if is_me else "assistant" # Uses Streamlit's native roles for styling
+    role = "user" if is_me else "assistant" 
     avatar = "⚡" if is_me else "👤"
 
     with st.chat_message(role, avatar=avatar):
@@ -169,7 +188,6 @@ for i, m in enumerate(messages):
         with c1:
             if not is_me: st.markdown(f"**{m['sender']}**")
         with c2:
-            # Unique key for every button
             if st.button("↩️", key=f"reply_{i}"):
                 st.session_state.reply_to = f"> *Replying to {m['sender']}:* \"{m['rewritten_text']}\"\n\n"
                 st.rerun()
@@ -177,11 +195,10 @@ for i, m in enumerate(messages):
         st.markdown(m['rewritten_text'])
 
 # --- ⌨️ INPUT AREA ---
-# Show "Replying To" Banner
 if st.session_state.reply_to:
     st.markdown(f"""
-        <div style="background:#334155; padding:10px; border-radius:8px; margin-bottom:10px; border-left:4px solid #4ade80; display:flex; justify-content:space-between; align-items:center;">
-            <span style="color:#e2e8f0; font-size:14px;">↩️ Replying...</span>
+        <div style="background:#ffffff; padding:10px; border-radius:8px; margin-bottom:10px; border-left:4px solid #0284c7; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display:flex; justify-content:space-between; align-items:center;">
+            <span style="color:#334155; font-size:14px;">↩️ Replying...</span>
         </div>
     """, unsafe_allow_html=True)
     if st.button("❌ Cancel Reply", key="cancel_reply"):
@@ -190,11 +207,9 @@ if st.session_state.reply_to:
 
 if prompt := st.chat_input(f"Message as {username}..."):
     final_msg = prompt
-    
-    # Prepend reply text if exists
     if st.session_state.reply_to:
         final_msg = st.session_state.reply_to + prompt
-        st.session_state.reply_to = None # Clear after sending
+        st.session_state.reply_to = None 
         
     analysis = check_message(final_msg)
     save_to_db(room_id, username, final_msg, analysis['rewritten'], analysis['score'])
