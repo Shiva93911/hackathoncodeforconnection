@@ -8,7 +8,7 @@ from streamlit_autorefresh import st_autorefresh
 # Get these from your Google AI Studio and Supabase Dashboard
 GOOGLE_API_KEY = "AIzaSyCqkhmUDXiQiqosXxM1RlFTUHBSeQB280A"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
-SUPABASE_KEY"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
 # --- 🔄 AUTO-REFRESH ---
 # This pulls new messages from the database every 5 seconds
@@ -128,4 +128,5 @@ with st.form("message_input", clear_on_submit=True):
             with st.spinner("AEGIS is shielding..."):
                 analysis = aegis_rewrite(user_text, role)
                 save_to_db(role, user_text, analysis['rewritten'], analysis['score'])
+
                 st.rerun()
