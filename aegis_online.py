@@ -73,17 +73,6 @@ st.markdown("""
         padding: 10px 15px;
     }
     
-    /* God Mode Text */
-    .god-mode-box {
-        font-size: 0.75em;
-        color: #ff6b6b;
-        margin-top: 4px;
-        font-style: italic;
-        background: rgba(0,0,0,0.2);
-        padding: 4px 8px;
-        border-radius: 8px;
-    }
-    
     /* Hide Streamlit Elements */
     #MainMenu {visibility: hidden;}
     footer {visibility: hidden;}
@@ -181,7 +170,6 @@ with st.sidebar:
     
     # User Settings
     username = st.text_input("Username", value="User")
-    god_mode = st.toggle("God Mode (Admin View)", value=False)
     
     if st.button("🗑️ Clear History", type="primary"): 
         # Only clears messages for THIS room
@@ -233,12 +221,7 @@ with col2:
                     <span class="sender-label">{m['sender']}</span>
                     {m['rewritten_text']}
                 </div>
+            </div>
             """
-            
-            # Add God Mode text if needed
-            if god_mode and m['original_text'] != m['rewritten_text']:
-                 msg_html += f'<div class="god-mode-box">Original: "{m["original_text"]}"</div>'
-            
-            msg_html += "</div>"
             
             st.markdown(msg_html, unsafe_allow_html=True)
