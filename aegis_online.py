@@ -2,15 +2,15 @@ import streamlit as st
 import httpx
 from streamlit_autorefresh import st_autorefresh
 
-# --- 🔐 CONFIGURATION (PASTE YOUR KEYS HERE) ---
+# --- 🔐 CONFIGURATION (KEYS EMBEDDED) ---
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
-SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
+SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
-# --- 🚫 BANNED WORD LIST (Edit this list!) ---
-# These words will trigger a block, even if hidden inside other words (e.g. "ass" blocks "pass")
+# --- 🚫 BANNED WORD LIST ---
+# If a word contains these, it gets starred out (****)
 BANNED_WORDS = [
     "fuck", "shit", "bitch", "ass", "idiot", "stupid", "dumb", 
-    "hate", "kill", "die", "moron", "useless", "dick",
+    "hate", "kill", "die", "moron", "useless"
 ]
 
 # --- 🔄 AUTO-REFRESH ---
@@ -53,28 +53,40 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- ⚡ INSTANT FILTER LOGIC (NO AI) ---
+# --- ⚡ WORD-BY-WORD FILTER ---
 def check_message(text):
-    text_lower = text.lower()
+    words = text.split()
+    clean_words = []
+    was_censored = False
     
-    # Check if any banned word is a substring of the message
-    for bad_word in BANNED_WORDS:
-        if bad_word in text_lower:
-            # Found a match! Block it immediately.
-            return {"rewritten": "msg restricted", "score": 100}
+    for word in words:
+        # Check if the word contains a banned phrase (e.g. "dumb" inside "dumbass")
+        word_lower = word.lower()
+        is_bad = False
+        for bad in BANNED_WORDS:
+            if bad in word_lower:
+                is_bad = True
+                break
+        
+        if is_bad:
+            clean_words.append("****") # Replace ONLY the bad word
+            was_censored = True
+        else:
+            clean_words.append(word) # Keep the good word
             
-    # No bad words found
-    return {"rewritten": text, "score": 0}
+    # Reconstruct the sentence
+    final_text = " ".join(clean_words)
+    score = 100 if was_censored else 0
+    return {"rewritten": final_text, "score": score}
 
 # --- 🎨 UI DESIGN ---
-st.set_page_config(page_title="AEGIS: Hard Filter", page_icon="🛡️", layout="centered")
+st.set_page_config(page_title="AEGIS: Smart Filter", page_icon="🛡️", layout="centered")
 
 st.markdown("""
 <style>
     .chat-bubble { padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; width: fit-content; max-width: 80%; }
     .bubble-left { background-color: #F0F2F6; color: black; }
     .bubble-right { background-color: #007AFF; color: white; margin-left: auto; }
-    .restricted-msg { font-style: italic; color: #888; background-color: #f8f9fa; border: 1px dashed #ccc; }
     .god-mode-box { font-size: 0.8em; color: #d32f2f; margin-top: 2px; text-align: right; font-family: monospace; }
 </style>
 """, unsafe_allow_html=True)
@@ -87,14 +99,14 @@ with st.sidebar:
     
     god_mode = False
     if role == "Person A":
-        god_mode = st.toggle("God Mode", value=False)
+        god_mode = st.toggle("God Mode (See Original)", value=False)
             
     if st.button("Clear Chat"): 
         clear_db()
         st.rerun()
 
 # --- CHAT ---
-st.caption("Strict Keyword Filtering")
+st.caption("Partial Filtering Active")
 
 chat_container = st.container()
 with chat_container:
@@ -103,28 +115,16 @@ with chat_container:
         is_me = (m['sender'] == role)
         bubble_class = "bubble-right" if is_me else "bubble-left"
         
-        # Check if restricted
-        msg_text = m['rewritten_text']
-        extra_style = ""
-        
-        if msg_text == "msg restricted":
-            if is_me:
-                # If I sent it, still show as blue bubble but maybe distinctive
-                pass 
-            else:
-                # If they sent it, show as greyed out
-                bubble_class += " restricted-msg"
-        
         # Draw Message
         st.markdown(f"""
             <div class="chat-bubble {bubble_class}">
-                <b>{m['sender']}</b>: {msg_text}
+                <b>{m['sender']}</b>: {m['rewritten_text']}
             </div>
         """, unsafe_allow_html=True)
         
-        # God Mode Text (Only shows if message was actually blocked)
+        # God Mode Text (Shows the original text if something was changed)
         if god_mode and m['original_text'] != m['rewritten_text']:
-             st.markdown(f'<div class="god-mode-box">Blocked: "{m["original_text"]}"</div>', unsafe_allow_html=True)
+             st.markdown(f'<div class="god-mode-box">Original: "{m["original_text"]}"</div>', unsafe_allow_html=True)
 
 # --- INPUT ---
 st.divider()
