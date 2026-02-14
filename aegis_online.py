@@ -1,4 +1,4 @@
-import streamlit as st
+ import streamlit as st
 import google.generativeai as genai
 import httpx
 from streamlit_autorefresh import st_autorefresh
@@ -60,4 +60,87 @@ def aegis_rewrite(text, sender):
     prompt = f"""
     Rewrite if rude. Keep if neutral.
     Input: "{text}"
-    Output format: Clean Text || Score (0-10
+    Output format: Clean Text || Score (0-10)
+    """
+    
+    safety_settings = [
+        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
+        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
+    ]
+
+    try:
+        response = model.generate_content(prompt, safety_settings=safety_settings)
+        raw_text = response.text
+        
+        if "||" in raw_text:
+            parts = raw_text.split("||")
+            return {"rewritten": parts[0].strip(), "score": int(parts[1].strip()), "error": None}
+        else:
+            return {"rewritten": raw_text.strip(), "score": 0, "error": None}
+            
+    except Exception as e:
+        # Fallback instantly if AI fails
+        return {"rewritten": text, "score": 0, "error": str(e)}
+
+# --- 🎨 UI DESIGN ---
+st.set_page_config(page_title="AEGIS Lite", page_icon="⚡", layout="centered")
+
+st.markdown("""
+<style>
+    .chat-bubble { padding: 10px 16px; border-radius: 12px; margin-bottom: 8px; width: fit-content; max-width: 80%; }
+    .bubble-left { background-color: #F0F2F6; color: black; }
+    .bubble-right { background-color: #007AFF; color: white; margin-left: auto; }
+    .god-mode-box { font-size: 0.8em; color: #d32f2f; margin-top: 2px; text-align: right; }
+</style>
+""", unsafe_allow_html=True)
+
+# --- SIDEBAR ---
+with st.sidebar:
+    st.header("⚡ AEGIS Lite")
+    role = st.radio("Identity", ["Person A", "Person B"])
+    st.divider()
+    
+    god_mode = False
+    if role == "Person A":
+        god_mode = st.toggle("God Mode (View Original)", value=False)
+            
+    if st.button("Clear Chat"): 
+        clear_db()
+        st.rerun()
+
+# --- CHAT ---
+st.caption("High-Speed Conflict Filter")
+
+chat_container = st.container()
+with chat_container:
+    messages = get_messages()
+    for m in messages:
+        is_me = (m['sender'] == role)
+        bubble_class = "bubble-right" if is_me else "bubble-left"
+        
+        # Draw Message
+        st.markdown(f"""
+            <div class="chat-bubble {bubble_class}">
+                <b>{m['sender']}</b>: {m['rewritten_text']}
+            </div>
+        """, unsafe_allow_html=True)
+        
+        # God Mode Text
+        if god_mode and m['original_text'] != m['rewritten_text']:
+             st.markdown(f'<div class="god-mode-box">Original: "{m["original_text"]}"</div>', unsafe_allow_html=True)
+
+# --- INPUT ---
+st.divider()
+with st.form("input_form", clear_on_submit=True):
+    col1, col2 = st.columns([5, 1])
+    with col1:
+        user_msg = st.text_input("Msg", placeholder="Type...", label_visibility="collapsed")
+    with col2:
+        sent = st.form_submit_button("Send")
+        
+    if sent and user_msg:
+        analysis = aegis_rewrite(user_msg, role)
+        save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
+        st.rerun()
