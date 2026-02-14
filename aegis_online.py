@@ -8,8 +8,8 @@ GOOGLE_API_KEY = "AIzaSyBScixlXW09c7ykg7QC7JkgYv8HTgkiiIo"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
-# --- 🔄 AUTO-REFRESH ---
-st_autorefresh(interval=3000, key="chat_update_pulse")
+# --- 🔄 AUTO-REFRESH (Set to 2 seconds for snappier feel) ---
+st_autorefresh(interval=2000, key="chat_update_pulse")
 
 # --- 🛠️ DATABASE HELPERS ---
 def get_messages():
@@ -17,7 +17,7 @@ def get_messages():
     headers = {"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"}
     try:
         with httpx.Client() as client:
-            r = client.get(url, headers=headers)
+            r = client.get(url, headers=headers, timeout=5.0)
             return r.json()
     except Exception:
         return []
@@ -36,8 +36,12 @@ def save_to_db(sender, original, rewritten, score):
         "rewritten_text": rewritten,
         "toxicity_score": score
     }
-    with httpx.Client() as client:
-        client.post(url, headers=headers, json=data)
+    # Fire and forget (don't wait for response to speed up UI)
+    try:
+        with httpx.Client() as client:
+            client.post(url, headers=headers, json=data, timeout=5.0)
+    except:
+        pass
 
 def clear_db():
     url = f"{SUPABASE_URL}/rest/v1/messages?id=gt.0"
@@ -45,157 +49,15 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- 🧠 SMART AI LOGIC (SELF-HEALING) ---
+# --- 🧠 AI LOGIC (SPEED OPTIMIZED) ---
 genai.configure(api_key=GOOGLE_API_KEY)
 
+# Using the standard Flash model (Balance of speed and quota)
+model = genai.GenerativeModel('gemini-1.5-flash') 
+
 def aegis_rewrite(text, sender):
-    # 🛡️ LIST OF MODELS TO TRY (If one fails, it tries the next)
-    # 1. Flash (Fastest, Free)
-    # 2. Flash-Latest (Alternative name)
-    # 3. Pro (The "Tank" - very reliable backup)
-    model_priority_list = [
-        'gemini-1.5-flash', 
-        'gemini-1.5-flash-latest', 
-        'gemini-1.5-flash-001',
-        'gemini-pro'
-    ]
-    
+    # Short, punchy prompt for faster processing
     prompt = f"""
-    Act as a conflict shield.
+    Rewrite if rude. Keep if neutral.
     Input: "{text}"
-    Instructions:
-    1. If the input contains profanity (f*ck, sh*t, etc), you MUST rewrite it to be polite.
-    2. If the input is rude, make it polite.
-    3. If the input is neutral/hello, keep it exactly as is.
-    Format your response exactly like this:
-    [Rewritten Message] || [Toxicity Score 0-100]
-    """
-    
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
-
-    last_error = None
-
-    # 🔄 Loop through models until one works
-    for model_name in model_priority_list:
-        try:
-            model = genai.GenerativeModel(model_name)
-            response = model.generate_content(prompt, safety_settings=safety_settings)
-            
-            # If successful, parse and return immediately
-            raw_text = response.text
-            if "||" in raw_text:
-                parts = raw_text.split("||")
-                rewritten = parts[0].strip()
-                score = int(parts[1].strip())
-            else:
-                rewritten = raw_text.strip()
-                score = 0
-            
-            # Success! Return the data (and the name of the model that worked for debugging)
-            return {"rewritten": rewritten, "score": score, "error": None}
-            
-        except Exception as e:
-            # If this model failed, save error and loop to the next one
-            last_error = e
-            continue
-
-    # If ALL models failed, return the error
-    return {"rewritten": text, "score": 0, "error": str(last_error)}
-
-# --- 🎨 UI DESIGN ---
-st.set_page_config(page_title="AEGIS: Silent Shield", page_icon="🛡️", layout="centered")
-
-st.markdown("""
-<style>
-    .chat-bubble { padding: 12px 18px; border-radius: 18px; margin-bottom: 8px; width: fit-content; max-width: 80%; font-size: 16px; line-height: 1.4; }
-    .bubble-left { background-color: #F2F4F8; color: #1a1a1a; align-self: flex-start; border-bottom-left-radius: 4px; }
-    .bubble-right { background-color: #007AFF; color: white; margin-left: auto; border-bottom-right-radius: 4px; }
-    .sender-name { font-size: 0.75em; color: #666; margin-bottom: 2px; display: block; }
-    .god-mode-box { background-color: #fff0f0; border-left: 3px solid #ff4444; padding: 5px 10px; margin-top: 5px; border-radius: 4px; font-size: 0.8em; color: #555; }
-    .raw-label { font-weight: bold; color: #d32f2f; font-size: 0.9em; }
-</style>
-""", unsafe_allow_html=True)
-
-# --- SIDEBAR & SETTINGS ---
-with st.sidebar:
-    st.header("🛡️ AEGIS Config")
-    role = st.radio("Identity", ["Person A", "Person B"])
-    
-    st.divider()
-    
-    # GOD MODE
-    god_mode = False
-    if role == "Person A":
-        st.subheader("Admin Controls")
-        god_mode = st.toggle("👁️ God Mode", value=False)
-            
-    st.divider()
-    if st.button("🗑️ Wipe Conversation"): 
-        clear_db()
-        st.rerun()
-        
-    # DEBUG SECTION
-    if "last_error" in st.session_state and st.session_state.last_error:
-        st.error(f"Connection Issue: {st.session_state.last_error}")
-
-# --- MAIN CHAT HEADER ---
-st.title("🛡️ AEGIS")
-if god_mode:
-    st.caption("⚠️ GOD MODE ACTIVE: Viewing raw inputs.")
-else:
-    st.caption("Seamless Conflict Filtering")
-
-# --- 💬 CHAT LOGIC ---
-messages = get_messages()
-chat_container = st.container()
-
-with chat_container:
-    for m in messages:
-        is_me = (m['sender'] == role)
-        bubble_class = "bubble-right" if is_me else "bubble-left"
-        align_style = "right" if is_me else "left"
-        
-        # Check if text was changed
-        was_changed = m['original_text'] != m['rewritten_text']
-        
-        # Render CLEAN message
-        st.markdown(f"""
-            <div style="display:flex; flex-direction:column; align-items:flex-{list(['start','end'])[is_me]};">
-                <span class="sender-name">{m['sender']}</span>
-                <div class="chat-bubble {bubble_class}">
-                    {m['rewritten_text']}
-                </div>
-            </div>
-        """, unsafe_allow_html=True)
-        
-        # God Mode Injection
-        if god_mode and was_changed:
-            st.markdown(f"""
-                <div style="text-align:{align_style}; margin-bottom: 15px; width: fit-content; margin-left:{'auto' if is_me else '0'};">
-                    <div class="god-mode-box">
-                        <span class="raw-label">👁️ ORIGINAL:</span><br>
-                        "{m['original_text']}"
-                    </div>
-                </div>
-            """, unsafe_allow_html=True)
-        else:
-            st.markdown('<div style="margin-bottom: 10px;"></div>', unsafe_allow_html=True)
-
-# --- ⌨️ INPUT AREA ---
-st.divider()
-with st.form("input_form", clear_on_submit=True):
-    col1, col2 = st.columns([5, 1])
-    with col1:
-        user_msg = st.text_input("Message", placeholder=f"Type as {role}...", label_visibility="collapsed")
-    with col2:
-        sent = st.form_submit_button("Send 🚀")
-        
-    if sent and user_msg:
-        # Run Analysis
-        analysis = aegis_rewrite(user_msg, role)
-
+    Output format: Clean Text || Score (0-10
