@@ -4,7 +4,7 @@ import httpx
 from streamlit_autorefresh import st_autorefresh
 
 # --- 🔐 CONFIGURATION (PASTE YOUR KEYS HERE) ---
-GOOGLE_API_KEY = "AIzaSyDyKRm6bhsDnM30peCjjxxMcT7hriBWNek"
+GOOGLE_API_KEY = "AIzaSyCqkhmUDXiQiqosXxM1RlFTUHBSeQB280A"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
@@ -45,13 +45,13 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- 🧠 AI LOGIC (BULLETPROOF TEXT MODE) ---
+# --- 🧠 AI LOGIC (SWITCHED TO 1.5 FLASH) ---
 genai.configure(api_key=GOOGLE_API_KEY)
-# We use the standard model. If this fails, check your API Key.
-model = genai.GenerativeModel('gemini-2.0-flash') 
+
+# ✅ CHANGED: Switched to 'gemini-1.5-flash' which has a much bigger free quota
+model = genai.GenerativeModel('gemini-1.5-flash') 
 
 def aegis_rewrite(text, sender):
-    # We ask for a simple format: "REWRITTEN_TEXT || SCORE"
     prompt = f"""
     Act as a conflict shield.
     Input: "{text}"
@@ -65,7 +65,7 @@ def aegis_rewrite(text, sender):
     [Rewritten Message] || [Toxicity Score 0-100]
     """
     
-    # Simple safety settings (Block None using strings to avoid import errors)
+    # Safety settings to allow processing of bad words for correction
     safety_settings = [
         {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
         {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
@@ -89,7 +89,7 @@ def aegis_rewrite(text, sender):
         return {"rewritten": rewritten, "score": score, "error": None}
         
     except Exception as e:
-        # RETURN THE ERROR so we can see it in the sidebar
+        # Return error string so we can debug in sidebar
         return {"rewritten": text, "score": 0, "error": str(e)}
 
 # --- 🎨 UI DESIGN ---
@@ -124,9 +124,9 @@ with st.sidebar:
         clear_db()
         st.rerun()
         
-    # DEBUG SECTION
+    # DEBUG SECTION (Shows red error if AI fails)
     if "last_error" in st.session_state and st.session_state.last_error:
-        st.error(f"Last AI Error: {st.session_state.last_error}")
+        st.error(f"AI Error: {st.session_state.last_error}")
 
 # --- MAIN CHAT HEADER ---
 st.title("🛡️ AEGIS")
@@ -184,7 +184,7 @@ with st.form("input_form", clear_on_submit=True):
         # Run Analysis
         analysis = aegis_rewrite(user_msg, role)
         
-        # Capture error if any
+        # Capture error
         if analysis['error']:
             st.session_state.last_error = analysis['error']
         else:
@@ -192,4 +192,3 @@ with st.form("input_form", clear_on_submit=True):
             
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
-
