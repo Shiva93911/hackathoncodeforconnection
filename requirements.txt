@@ -1,4 +1,3 @@
 streamlit
-google-generativeai
 httpx
 streamlit-autorefresh
