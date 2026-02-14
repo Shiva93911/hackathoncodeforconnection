@@ -4,7 +4,7 @@ import httpx
 from streamlit_autorefresh import st_autorefresh
 
 # --- 🔐 CONFIGURATION (PASTE YOUR KEYS HERE) ---
-GOOGLE_API_KEY = "AIzaSyCqkhmUDXiQiqosXxM1RlFTUHBSeQB280A"
+GOOGLE_API_KEY = "AIzaSyDyKRm6bhsDnM30peCjjxxMcT7hriBWNek"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
@@ -192,3 +192,4 @@ with st.form("input_form", clear_on_submit=True):
             
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
+
