@@ -1,6 +1,7 @@
 import streamlit as st
 import google.generativeai as genai
 import httpx
+from google.generativeai.types import HarmCategory, HarmBlockThreshold
 from streamlit_autorefresh import st_autorefresh
 
 # --- 🔐 CONFIGURATION (PASTE YOUR KEYS HERE) ---
@@ -8,7 +9,7 @@ GOOGLE_API_KEY = "AIzaSyBScixlXW09c7ykg7QC7JkgYv8HTgkiiIo"
 SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY =  "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
-# --- 🔄 AUTO-REFRESH (Set to 2 seconds for snappier feel) ---
+# --- 🔄 AUTO-REFRESH ---
 st_autorefresh(interval=2000, key="chat_update_pulse")
 
 # --- 🛠️ DATABASE HELPERS ---
@@ -36,7 +37,6 @@ def save_to_db(sender, original, rewritten, score):
         "rewritten_text": rewritten,
         "toxicity_score": score
     }
-    # Fire and forget (don't wait for response to speed up UI)
     try:
         with httpx.Client() as client:
             client.post(url, headers=headers, json=data, timeout=5.0)
@@ -49,26 +49,33 @@ def clear_db():
     with httpx.Client() as client:
         client.delete(url, headers=headers)
 
-# --- 🧠 AI LOGIC (SPEED OPTIMIZED) ---
+# --- 🧠 AI LOGIC (ROBUST MODE) ---
 genai.configure(api_key=GOOGLE_API_KEY)
 
-# Using the standard Flash model (Balance of speed and quota)
-model = genai.GenerativeModel('gemini-1.5-flash') 
+# Switched to 'gemini-pro' (1.0) which is often more stable for simple tasks
+model = genai.GenerativeModel('gemini-pro') 
 
 def aegis_rewrite(text, sender):
-    # Short, punchy prompt for faster processing
     prompt = f"""
-    Rewrite if rude. Keep if neutral.
-    Input: "{text}"
-    Output format: Clean Text || Score (0-10)
+    You are a conflict filter.
+    Input Text: "{text}"
+    
+    Task:
+    1. If the text is rude, toxic, or contains profanity: Rewrite it to be polite.
+    2. If the text is neutral: Keep it exactly as is.
+    
+    Response Format:
+    [Rewritten Text] || [Toxicity Score 0-10]
     """
     
-    safety_settings = [
-        {"category": "HARM_CATEGORY_HARASSMENT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_HATE_SPEECH", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_SEXUALLY_EXPLICIT", "threshold": "BLOCK_NONE"},
-        {"category": "HARM_CATEGORY_DANGEROUS_CONTENT", "threshold": "BLOCK_NONE"},
-    ]
+    # 🛡️ HARDCODED SAFETY OVERRIDES
+    # We use the explicit Enum values to prevent library confusion
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
 
     try:
         response = model.generate_content(prompt, safety_settings=safety_settings)
@@ -81,37 +88,42 @@ def aegis_rewrite(text, sender):
             return {"rewritten": raw_text.strip(), "score": 0, "error": None}
             
     except Exception as e:
-        # Fallback instantly if AI fails
-        return {"rewritten": text, "score": 0, "error": str(e)}
+        # 🚨 ERROR HANDLING:
+        # Instead of showing the bad word, we show a system message so you know it failed.
+        error_msg = str(e)
+        if "429" in error_msg:
+            return {"rewritten": "⚠️ [System: AI Quota Exceeded]", "score": 0, "error": error_msg}
+        else:
+            return {"rewritten": f"⚠️ [System: AI Error - {error_msg}]", "score": 0, "error": error_msg}
 
 # --- 🎨 UI DESIGN ---
-st.set_page_config(page_title="AEGIS Lite", page_icon="⚡", layout="centered")
+st.set_page_config(page_title="AEGIS: The Tank", page_icon="🛡️", layout="centered")
 
 st.markdown("""
 <style>
-    .chat-bubble { padding: 10px 16px; border-radius: 12px; margin-bottom: 8px; width: fit-content; max-width: 80%; }
+    .chat-bubble { padding: 12px 18px; border-radius: 12px; margin-bottom: 8px; width: fit-content; max-width: 80%; }
     .bubble-left { background-color: #F0F2F6; color: black; }
     .bubble-right { background-color: #007AFF; color: white; margin-left: auto; }
-    .god-mode-box { font-size: 0.8em; color: #d32f2f; margin-top: 2px; text-align: right; }
+    .god-mode-box { font-size: 0.8em; color: #d32f2f; margin-top: 2px; text-align: right; font-family: monospace; }
 </style>
 """, unsafe_allow_html=True)
 
 # --- SIDEBAR ---
 with st.sidebar:
-    st.header("⚡ AEGIS Lite")
+    st.header("🛡️ AEGIS Tank")
     role = st.radio("Identity", ["Person A", "Person B"])
     st.divider()
     
     god_mode = False
     if role == "Person A":
-        god_mode = st.toggle("God Mode (View Original)", value=False)
+        god_mode = st.toggle("God Mode", value=False)
             
     if st.button("Clear Chat"): 
         clear_db()
         st.rerun()
 
 # --- CHAT ---
-st.caption("High-Speed Conflict Filter")
+st.caption("Robust Conflict Filtering")
 
 chat_container = st.container()
 with chat_container:
@@ -144,4 +156,3 @@ with st.form("input_form", clear_on_submit=True):
         analysis = aegis_rewrite(user_msg, role)
         save_to_db(role, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
-
