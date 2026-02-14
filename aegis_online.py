@@ -8,7 +8,7 @@ SUPABASE_URL = "https://vzjnqlfprmggutawcqlg.supabase.co"
 SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZ6am5xbGZwcm1nZ3V0YXdjcWxnIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEwMzUyMjcsImV4cCI6MjA4NjYxMTIyN30.vC_UxPIF7E3u0CCm3WQMpH9K2-tgJt8zG_Q4vGrPW1I"
 
 # --- 🚫 BANNED LISTS ---
-BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore", "chutiya" , "puk" ,"lanj" , "kojja","munda", "randi", "F U C" ,"Gandu","G A"]
+BANNED_PARTIAL = ["fuck", "shit", "bitch", "idiot", "stupid", "moron", "cunt", "whore", "chutiya" , "puk" ,"lanj" , "kojja","munda", "randi","Gandu","dick"]
 BANNED_EXACT = ["ass", "die", "kill", "hate", "butt", "damn"]
 
 # --- 🔄 PAGE SETUP & ROOM ID ---
@@ -154,6 +154,7 @@ with st.form("input_form", clear_on_submit=True):
         analysis = check_message(user_msg)
         save_to_db(room_id, username, user_msg, analysis['rewritten'], analysis['score'])
         st.rerun()
+
 
 
 
